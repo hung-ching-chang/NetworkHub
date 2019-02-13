@@ -1,0 +1,81 @@
+#Function: NetworkHub
+# "NetworkHub" is a pathway analysis for gene expression levels. The goal is 
+# to provide a statistical tool which considers local effect and intra-network 
+# information of each node in the pathway when constructing a pathway level statistic for each sample. 
+
+# Input & output 
+# input: (Node_expression, case_control, Distance_mat, score_alpha = 1, pvalue_alpha = 0.05)
+#	(1) Node_expression: matrix of expression data of nodes in the pathway 
+#	    (row is for sample and column for node)
+#	(2) case_control: phenotypes of samples (case = 1, control = 0)
+#	(3) Distance_mat: matrix of the minimum distance between all nodes in the pathway.  
+#	    Note that distance matrix can be calculated easily using "igraph" package
+#	(4) score_alpha: alpha value in the topology information (default = 1)
+#	(5) pvalue_alpha: alpha value in the local effect (default = 0.05)
+# output: (T_stat)
+#	(1) T_stat: the statistic used in NetworkHub
+
+#######################################################
+# function starts
+
+NetworkHub <- function(Node_expression, case_control, Distance_mat, score_alpha = 1, pvalue_alpha = 0.05){
+  # First part: topological score 
+  # In first part, the topology information is saved into the "score" variable.
+  cor_G <- cor(Node_expression) # correlation matrix
+  score <- NULL
+  for(j in 1:dim(Node_expression)[2]){
+    tmp_score <- 0
+    # the topological score of each node is sum of relationship between itself and other nodes 
+    for(k in 1:dim(Node_expression)[2]){
+      # distance = 0 if nodea j & k are disconnected. Note, zero cannot be the denominator.
+      if(Distance_mat[j, k] != 0){
+        tmp_score <- tmp_score + abs(cor_G[j, k])/Distance_mat[j, k]
+      }
+    }
+    score <- c(score, tmp_score)
+  }
+  
+  # Second part: local effect 
+  # In second part, calculate the local effect of each node from single-marker test
+  p_value <- NULL
+  for(j in 1:dim(Node_expression)[2]){
+    tmp <- t.test(Node_expression[,j]~case_control, var.equal = FALSE)
+    p_value <- c(p_value, tmp$p.value)
+    # effect regularization
+    if(tmp$statistic > 0){             
+      max_expression <- max(Node_expression[, j])
+      Node_expression[,j] <- max_expression - Node_expression[, j] + 0.001
+    }
+  }
+  
+  # Indicator function
+  # set a threshold for the p-value from single marker test
+  # if fail to pass, assign punishment: score -> 0 
+  indicator <- sapply(p_value, function(x) ifelse(x > score_alpha, 1, 0))
+  score[indicator == 1] <- 0
+  # punishment: p_value -> 1 (because log p-value -> 0)
+  p_value <- sapply(p_value, function(x) ifelse(x > pvalue_alpha, 1, x))
+  
+  # Combine two weights (topological score + local effect)
+  if(sum(p_value) == dim(Node_expression)[2] & sum(score) == 0){
+    weight <- rep(1/dim(Node_expression)[2], dim(Node_expression)[2])
+  }else if(sum(p_value) == dim(Node_expression)[2]){
+    weight <- score/sum(score) + 1/dim(Node_expression)[2]     
+  }else if(sum(score) == 0){
+    weight <- (-log(p_value))/sum(-log(p_value)) + 1/dim(Node_expression)[2] 
+  }else{  
+    weight <- (-log(p_value))/sum(-log(p_value)) + score/sum(score)
+  }
+  
+  # Compute the statistic 
+  sample_stat <- Node_expression %*% weight
+  case_number <- sum(case_control)
+  control_number <- length(case_control) - case_number
+  case_stat_mean <- mean(sample_stat[case_control == 1])
+  control_stat_mean <- mean(sample_stat[case_control == 0])
+  SS_case <- var(sample_stat[case_control == 1])
+  SS_control <- var(sample_stat[case_control == 0])
+  # statistic
+  T_stat <- (case_stat_mean - control_stat_mean)/sqrt(SS_case/case_number + SS_control/control_number)
+  return(T_stat)
+}

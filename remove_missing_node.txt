@@ -1,0 +1,47 @@
+# Function: remove_missing_node
+#  Remove nodes whose expression levels were not measured
+
+# Input and output 
+# input: (missing_pos, adjacency_matrix, node_detail_file)
+#	(1) missing_pos: positions of the nodes missing expression levels
+#	(2) adjacency_matrix: adjacency matrix
+#	(3) node_detail_file: detail information of nodes within the target pathway
+# output: (adjacency_matrix, node_detail_file)
+#	(1) adjacency_matrix: new adjacency matrix without missing expression levels
+#	(2) node_detail_file: detail information of nodes within the target pathway  
+#	    (no missing expression)
+
+##################################################################
+# Function starts (undirected version)
+
+remove_missing_node <- function(missing_pos, adjacency_matrix, node_detail_file){
+  if(length(missing_pos) != 0){
+    # then remove one-by-one the node with missing expression
+    for(i in 1:length(missing_pos)){
+      # find out which nodes connect with the missing node (= neighbors of missing node)
+      neighbor_of_missing_node <- which(adjacency_matrix[missing_pos[i],] == 1)
+      # a node with 0 number of neighbors represents an isolated node
+      # a node with only 1 neighbor represents a boundary node in the network
+      # for both conditions above, the node can be removed directly and need not to worry about affecting the network structure
+      if(length(neighbor_of_missing_node) <= 1){
+        adjacency_matrix <- adjacency_matrix[-missing_pos[i], -missing_pos[i]]
+        node_detail_file <- node_detail_file[-missing_pos[i],]
+        # after removing the node indexed in "missing_pos" variable,
+        # the indices of the rest nodes should be changed
+        missing_pos <- missing_pos - 1
+      }else{
+        # If the number of neighbors is larger than 2, then all neighbors must connect together. 
+        # use function "combn" to produce new relationship between neighbors (and call this the NEW edge)
+        new_edge <- combn(neighbor_of_missing_node, 2)
+        # put NEW edge into the new adjacency matrix
+        for(j in 1:dim(new_edge)[2]){
+          adjacency_matrix[new_edge[1,j], new_edge[2,j]] <- adjacency_matrix[new_edge[2,j], new_edge[1,j]] <- 1
+        }
+        adjacency_matrix <- adjacency_matrix[-missing_pos[i], -missing_pos[i]]
+        node_detail_file <- node_detail_file[-missing_pos[i],]
+        missing_pos <- missing_pos - 1
+      }
+    }
+  }
+  return(list(adjacency_matrix, node_detail_file))
+}

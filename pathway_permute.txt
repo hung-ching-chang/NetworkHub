@@ -1,0 +1,37 @@
+# Function: pathway_permute
+#   Perform permutation and to obtain statistic, these values can be used later to calculate p-value
+
+# Function/package requirement
+#  function: "NetworkHub" 
+
+# Input & output
+# input: (replication, Node_expression, case_control, Distance_mat, score_alpha, pvalue_alpha)
+#	(1) replication: number of permutations
+#	(2) Node_expression: a matrix of expression data for nodes in the pathway 
+#	    (row is for sample and column for node)
+#	(3) case_control: phenotype of samples (case = 1, control = 0)
+#	(4) Distance_mat: a matrix of the minimum distance between all nodes in the pathway
+#	(5) score_alpha: alpha value in the topology information (default = 1)
+#	(6) pvalue_alpha: alpha value in the local effect (default = 0.05)
+# output: (permute_value)
+#	(1) permute_value: the statistic from each permutation
+
+#######################################################
+# function starts
+
+pathway_permute <- function(replication, Node_expression, case_control, Distance_mat, score_alpha = 1, pvalue_alpha = 0.05){
+  sample_size <- length(case_control)
+  permute_value <- NULL
+  for(i in 1:replication){
+    # rearrange sample phenotypes
+    case_control_permut <- sample(case_control, sample_size, replace = FALSE)
+    # perform NetworkHub
+    output_permut <- NetworkHub(Node_expression = Node_expression, 
+                                case_control = case_control_permut, 
+                                Distance_mat = Distance_mat, 
+                                score_alpha = score_alpha, 
+                                pvalue_alpha = pvalue_alpha)
+    permute_value <- c(permute_value, output_permut)
+  }
+  return(permute_value)
+}

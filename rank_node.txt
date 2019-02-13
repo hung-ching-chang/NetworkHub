@@ -1,0 +1,57 @@
+# Function: rank_node 
+#   After identifying an associated pathway, this function ranks the nodes inside this pathway 
+
+# Function/package requirement
+#  function: "NetworkHub" 
+#  package: "igraph" 
+
+# Input & output
+# input: (Node_expression, case_control, adj_matrix, score_alpha = 1, pvalue_alpha = 0.05)
+#	(1) Node_expression: matrix of expression data of nodes in the pathway 
+#	    (row is for sample and column for node)
+#	(2) case_control: phenotypes of samples (case = 1, control = 0)
+#	(3) adj_matrix: undirected adjacency matrix
+#	(4) score_alpha: alpha value in the topology information (default = 1)
+#	(5) pvalue_alpha: alpha value in the local effect (default = 0.05)
+# output: (rank_stat)
+#	(1) rank_stat: ranking statistic calculated by NetworkHub
+
+#######################################################
+# function starts
+
+rank_node <- function(Node_expression, case_control, adj_matrix, score_alpha = 1, pvalue_alpha = 0.05){
+  library(igraph) 
+  diag(adj_matrix) <- 0
+  gg <- graph_from_adjacency_matrix(adj_matrix)
+  Distance_mat <- distances(gg)  # Distance matrix
+  # the original statistic based on the full pathway
+  pathway_stat <- NetworkHub(Node_expression = Node_expression, 
+                             case_control = case_control, 
+                             Distance_mat = Distance_mat, 
+                             score_alpha = score_alpha, 
+                             pvalue_alpha = pvalue_alpha)
+  # remove node i
+  rank_stat <- NULL
+  for(i in 1:dim(Node_expression)[2]){
+    adj_matrix_cut_node <- adj_matrix
+    # cut all connections between node i & its neighbors
+    adj_matrix_cut_node[,i] <- adj_matrix_cut_node[i,] <- 0 
+    # create a new distance matrix
+    gg <- graph_from_adjacency_matrix(adj_matrix_cut_node)
+    Distance_mat <- distances(gg)
+    # compute the new statistic
+    tmp_output <- NetworkHub(Node_expression = Node_expression, 
+                             case_control = case_control, 
+                             Distance_mat = Distance_mat, 
+                             score_alpha = score_alpha, 
+                             pvalue_alpha = pvalue_alpha)
+    rank_stat <- c(rank_stat, tmp_output)
+  }
+  # save nodes' name
+  names(rank_stat) <- colnames(Node_expression) 
+  # ranking statistic is the difference between new statistic and the original statistic
+  rank_stat <- abs(rank_stat - pathway_stat)
+  return(rank_stat)
+}
+
+
