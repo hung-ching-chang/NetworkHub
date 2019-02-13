@@ -1,0 +1,225 @@
+# Function: KGML_to_Matrix
+# 	This function can download KGML file from KEGG pathway database and transfer the KGML file to a directed adjacency matrix. 
+# 	In addition, this function also saves the detailed information of nodes within the target pathway.
+# 	Notes: 
+# 	1. This function currently deals with only human biological pathways whose organism ID starts with 
+#   	   "hsa", and is unsuitable for metabolism pathway because of its special data structure.
+# 	2. An adjacency matrix is a square matrix used to represent a finite graph. A component with a 
+#   	   value of 0 indicates that these two nodes are disconnected; while a value of one represents 
+# 	   two nodes are connected. 
+# 	3. Nodes considered here are elements of the KEGG pathway. It may contain genes, compounds or 
+#    	   other pathway. Currently, nodes representing other pathways would not be considered in the 
+#          analysis and will be removed in the following analysis. 
+
+# Function/Package requirement
+#	 Package: "plyr" & "XML"
+
+# Input and output
+# input: (pathway_name, KGML_file_path, save_path)
+#	(1) pathway_name : Pathway name/entry. It would be used as the output file name.
+#	(2) KGML_file_path: The directory of the input KGML file .
+#	(3) save_path: The directory of the saved output file. 
+# output: (adj_matrix, node_detail)
+#	(1) adj_matrix: Directed adjacency matrix. This file would be saved in the folder which is assigned in the input.
+#	(2) node_detail: Detailed information of the nodes within the target pathway including 
+#		(a) entryID (representing entries of all genes/compounds/pathway in that node). Note that
+# 			a node can contain genes/compounds/pathway. For instance, hsa:10000 and hsa:207 
+#			hsa:208 are in the same node.
+#		(b) node type (representing what kind of components the node contains, such as gene and 
+# 			compound). Note that this variable is very useful to select nodes. For example, if you 
+#			only need to reserve "gene", then this function can be used. (details in the following 
+#			code for "preprocessing" code). 
+#		(c) node name (representing names of all genes/compounds/pathway in that node). This 
+#       		variable is similar to "entryID" variable. A node can contain more than one 
+#			genes/compounds/pathway. For instance, "ER" node contains "ESR1" gene and "ESR2" 
+# 			gene.
+
+##################################################################
+# Function starts 
+
+KGML_to_Matrix <- function(pathway_name, KGML_file_path = "", save_path = ""){
+  #  
+  # First, import the KGML file and rearrange it into 2 parts (node information and relation)
+  # 
+  # The XML package is used to read the KGML file with the extension "xml".
+  # The plyr package can transfer data type from list to data.frame.
+  # install.packages("XML") 
+  # install.packages("plyr")  
+  library(XML)
+  library(plyr)
+  
+  # Read KGML file and transfer to list
+  doc_xml <- xmlParse(KGML_file_path, useInternalNodes = TRUE)
+  doc_xml <- xmlToList(doc_xml) 
+  # Extract entry part (node information) and produce "node_detail" file in output.
+  data_entry_raw <- doc_xml[grep("entry", names(doc_xml))]
+  # Extract information about ¡§relation¡¨ between nodes, and produce "adj_matrix" file in output.
+  data_relation <- doc_xml[grep("relation", names(doc_xml))]
+  
+  # Part 1: processing entry part (node information)
+  # Extract useful variables (id / name / type / node_name) from entry part and transfer to data.frame
+  # id         -> index of nodes in pathway (node id)
+  # name       -> entryID of all genes/compounds inside the node (such as 7583, 9641, 255,...)
+  # type       -> type of components inside the node (such as gene, compound or group)
+  # node_name  -> symbol of all genes/compounds inside the node (such as ESR1, ESR2,...)
+  entry_extract <- function(xx){
+    data.frame(id = xx$".attrs"[1], name = xx$".attrs"[2], type = xx$".attrs"[3], node_name = xx$"graphics"[1])
+  }
+  data_entry <- lapply(data_entry_raw, entry_extract)
+  # transfer data type from list to data.frame
+  data_entry <- ldply(data_entry, data.frame)
+  data_entry <- data_entry[,-1]
+  
+  # "component.id", a variable for the index of nodes inside this group.
+  # "number", the variable for the number of nodes inside this group.
+  # "data_entry_new", a data-frame with an additional variable, "component", saves as (id / name / type / node_name / component)
+  tentative <- lapply(data_entry_raw, unlist)
+  number <- lapply(tentative, function(xx) sum(names(xx) == "component.id"))
+  number <- lapply(number, function(xx) ifelse(xx == 0, 1, xx))
+  number <- as.vector(unlist(number))
+  component <- lapply(tentative, function(xx) xx[names(xx) == "component.id"])
+  empty <- sum(sapply(component, function(xx) length(xx) == 0))
+  component <- append(rep(NA, empty), as.vector(unlist(component)))
+  data_entry_new <- cbind(data_entry[rep(row.names(data_entry),number), ], component)
+  
+  # Processing repeated nodes
+  unique_correspond <- NULL
+  unique_entryname <- NULL
+  unique_entryid <- NULL
+  # Filter out "map" nodes and preserve "gene" nodes and "compound" nodes only
+  data_entry <- subset(data_entry, data_entry$type != "map")
+  unique_entryname <- as.character(unique(data_entry$name))
+  unique_entryid <- as.character(data_entry$id[!duplicated(data_entry$name)] )
+  position_repeat <- match(data_entry$name[duplicated(data_entry$name)],  data_entry$name) 
+  unique_correspond <- cbind(as.character(data_entry$id[duplicated(data_entry$name)]), as.character(data_entry$id[position_repeat]))
+  
+  # Part 2: processing relationship part (relationship between nodes)
+  # Extract useful variables (entry1 / entry2) from data_relation and transfer to data.frame
+  # For example, (entry1 / entry2) = (A node / B node) represents there is an edge from A node to B 
+  # node. (A -> B) where entry1 and entry2 record node id
+  relation_extract <- function(xx){
+    data.frame(entry1 = xx$".attrs"[1], entry2 = xx$".attrs"[2])
+  }
+  data_relation <- lapply(data_relation, relation_extract)
+  # transfer from list to data.frame
+  data_relation <- ldply(data_relation, data.frame)
+  data_relation <- data_relation[,-1]
+  # transfer node id from numeric to character and save as matrix
+  data_relation <- apply(data_relation, 2, as.character)
+  data_relation <- matrix(data_relation, ncol = 2)
+  
+  # processing group
+  # Break group into separate nodes and make each node connect with the others.
+  # If some nodes inside the pathways do not have ¡§relation¡¨, then remove them and return the 
+  # pathway names. 
+  if (length(data_relation) == 0){
+    return(paste0("There are no relation in the ", pathway_name, "!"))
+  }else{
+    # separate_from records group id
+    # separate_to records component id
+    separate_from <- data_entry_new[data_entry_new$type == "group", "id"]
+    separate_from <- as.character(separate_from)
+    # transfer data type from factor to numeric
+    # Be careful! Factor should be transferred to character first before it is transferred to numeric. 
+    # (factor -> character -> numeric)
+    separate_to <- as.numeric(as.character(data_entry_new$component[!is.na(as.numeric(data_entry_new$component))]))
+    separate_to <- as.character(separate_to)
+    
+    # Break group into separate nodes in the relationship part  (need to use "separate_from" & 
+    # "separate_to" variable)
+    # replace group with its component
+    convert_group_to_node <- function(data_relation){  
+      # for relation 1
+      if (sum(separate_from %in% data_relation[1]) > 0){
+        relation1 <- separate_to[separate_from %in% data_relation[1]]
+      } else {
+        relation1 <- data_relation[1]
+      }
+      # for relation 2
+      if (sum(separate_from %in% data_relation[2]) > 0){
+        relation2 <- separate_to[separate_from %in% data_relation[2]]
+      } else {
+        relation2 <- data_relation[2]
+      }
+      return(expand.grid(relation1, relation2))
+    }
+    relation_new <- apply(data_relation, 1, convert_group_to_node)
+    # transfer from list to data, frame and save as character
+    relation_new <- ldply(relation_new, data.frame)
+    relation_new <- apply(relation_new, 2, as.character)
+    
+    # make each node connected with the rest in the same group.
+    # "relation_group_fn", a function combines the nodes within the same group.
+    relation_group_fn <- function(xx){
+      sub_group <- separate_to[which(separate_from %in% xx)]
+      return(t(combn(sub_group, 2)))
+    }
+    if(length(separate_from) > 0){
+      relation_group <- lapply(as.matrix(unique(separate_from)), relation_group_fn)
+      relation_group <- ldply(relation_group, data.frame)
+      relation_group <- as.matrix(relation_group)  
+      # reverse relation between nodes inside the same group because they should be undirected (A <-> B)
+      Reverse_relation <- cbind(relation_group[,2], relation_group[,1])
+      relation_group <- rbind(relation_group, Reverse_relation)
+      relation_group <- apply(relation_group, 2, as.character)
+      # Finally, combine "relation_new" and "relation_group"
+      relation_new <- rbind(relation_new, relation_group)
+    }
+    
+    # Create an adjacency matrix
+    # In part 2, the relationship part, it uses node id to record the relation.
+    # In order to save the relationship into the matrix, both the row name and column name in this 
+    # adjacency matrix should be node id.
+    relationship <- matrix(0, length(data_entry$id), length(data_entry$id))
+    colnames(relationship) <- as.character(data_entry$id)
+    rownames(relationship) <- as.character(data_entry$id)
+    # Save the connection of nodes.
+    position1 <- match(relation_new[,1], colnames(relationship))
+    position2 <- match(relation_new[,2], colnames(relationship))
+    relationship[cbind(position1, position2)] <- 1 
+    
+    # Deal with repeated nodes
+    # Find the position of repeated nodes in the matrix.
+    pos1 <- match(unique_correspond[ ,1], colnames(relationship)) #will be deleted the end
+    pos2 <- match(unique_correspond[ ,2], colnames(relationship)) #preserved part
+    # In order to avoid that pos1 does not include anything, add this "if else" constraint
+    if(length(pos1) != 0){
+      # marge the relationship of each node if they are the same node
+      for(i in 1:length(pos1)){
+        relationship[pos2[i], ] <- relationship[pos2[i], ] + relationship[pos1[i], ]
+        relationship[ ,pos2[i]] <- relationship[ ,pos2[i]] + relationship[ ,pos1[i]] 
+      }
+    }
+    # And, delete the id in column 1 to preserve unique nodes 
+    if (length(pos1) > 0){
+      relationship <- relationship[,-pos1]
+      relationship <- relationship[-pos1,]
+      # the other output (node_detail) -> record all information about unique nodes.
+      node_detail <- data_entry[-pos1, 2:4]
+      # remove the column and row of group node in the matrix
+      if(sum(data_entry$type == "group") != 0){
+        delete_group <- data_entry[-pos1,]
+        relationship <- relationship[-which(delete_group$type =="group"), -which(delete_group$type =="group")]
+        node_detail <- node_detail[-which(delete_group$type =="group"),]
+      }
+    }else{
+      node_detail <- data_entry[,2:4]
+    }
+    # Change the value which is larger than 1 to 1
+    for(i in 1: dim(relationship)[1]){
+      for(j in 1: dim(relationship)[1]){
+        if(relationship[i,j] > 1){
+          relationship[i,j] <- 1
+        }
+      }
+    }
+    adj_matrix <- relationship
+    
+    # save adj_matrix & node_detail
+    file_name <- paste(save_path, pathway_name, "(directed).RData", sep="")
+    save(adj_matrix, file = file_name)
+    file_name <- paste(save_path, pathway_name, "(node_detail).RData", sep="")
+    save(node_detail, file = file_name)
+    return("Success")
+  }
+}
