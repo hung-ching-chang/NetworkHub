@@ -53,5 +53,3 @@ rank_node <- function(Node_expression, case_control, adj_matrix, score_alpha = 1
   rank_stat <- abs(rank_stat - pathway_stat)
   return(rank_stat)
 }
-
-
