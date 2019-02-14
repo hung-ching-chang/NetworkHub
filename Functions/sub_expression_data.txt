@@ -7,10 +7,10 @@
 #	(1) gene_data: gene information and gene expression levels. It must have a column 
 #	    named EntrezGeneID as genes' ID
 #	(2) node_detail: information of nodes within the target pathway. It can be obtained 
-#	    by executing the function ¡§KGML_to_Matrix¡¨.
+#	    by executing the function Â¡Â§KGML_to_MatrixÂ¡Â¨.
 #	(3) sample_start_pos: index of the column containing the gene expression of the first sample
 #	(4) sample_end_pos: index of the column containing the gene expression of the last sample
-#	(5) symbol_in_KGML: determine the names of nodes in the output matrix ¡§pathway_expression¡¨. If ¡§T¡¨, use the gene symbols from the input object ¡§node_detail¡¨. If ¡§F¡¨, use the gene symbols from input data matrix ¡§gene_data¡¨.
+#	(5) symbol_in_KGML: determine the names of nodes in the output matrix Â¡Â§pathway_expressionÂ¡Â¨. If Â¡Â§TÂ¡Â¨, use the gene symbols from the input object Â¡Â§node_detailÂ¡Â¨. If Â¡Â§FÂ¡Â¨, use the gene symbols from input data matrix Â¡Â§gene_dataÂ¡Â¨.
 # output: (pathway_expression, missing_pos) (saved as list)
 #	(1) pathway_expression: expression data at the node level
 #	(2) missing_pos: positions of the nodes missing expression levels
@@ -61,7 +61,7 @@ sub_expression_data <- function(gene_data, node_detail, sample_start_pos, sample
     if(symbol_in_KGML == T){ 
       tmp_name <- pathway_node_name[i]
     }else{
-      # check the column name of gene symbol is ¡§GeneID¡¨ . 
+      # check the column name of gene symbol is Â¡Â§GeneIDÂ¡Â¨ . 
       tmp_name <- paste(node_expression$GeneID, collapse = ",")
     }
     node_name <- c(node_name, tmp_name)
