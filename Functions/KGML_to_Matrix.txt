@@ -53,7 +53,7 @@ KGML_to_Matrix <- function(pathway_name, KGML_file_path = "", save_path = ""){
   doc_xml <- xmlToList(doc_xml) 
   # Extract entry part (node information) and produce "node_detail" file in output.
   data_entry_raw <- doc_xml[grep("entry", names(doc_xml))]
-  # Extract information about ¡§relation¡¨ between nodes, and produce "adj_matrix" file in output.
+  # Extract information about Â¡Â§relationÂ¡Â¨ between nodes, and produce "adj_matrix" file in output.
   data_relation <- doc_xml[grep("relation", names(doc_xml))]
   
   # Part 1: processing entry part (node information)
@@ -110,7 +110,7 @@ KGML_to_Matrix <- function(pathway_name, KGML_file_path = "", save_path = ""){
   
   # processing group
   # Break group into separate nodes and make each node connect with the others.
-  # If some nodes inside the pathways do not have ¡§relation¡¨, then remove them and return the 
+  # If some nodes inside the pathways do not have Â¡Â§relationÂ¡Â¨, then remove them and return the 
   # pathway names. 
   if (length(data_relation) == 0){
     return(paste0("There are no relation in the ", pathway_name, "!"))
