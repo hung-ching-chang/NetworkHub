@@ -11,7 +11,7 @@
 # function starts
 
 tran2undirected <- function(adj_matrix){
-  # Detect the position of component with value 1 (not 0¡¦s) 
+  # Detect the position of component with value 1 (not 0Â¡Â¦s) 
   no_zero_pos <- which(adj_matrix == 1, arr.ind = T)
   # Use "reverse" to record the position information after exchanging column and row 
   reverse <- cbind(no_zero_pos[,2], no_zero_pos[,1])
