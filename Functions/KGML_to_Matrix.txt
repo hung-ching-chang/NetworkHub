@@ -1,5 +1,5 @@
 # Function: KGML_to_Matrix
-# 	This function can download KGML file from KEGG pathway database and transfer the KGML file to a directed adjacency matrix. 
+# 	This function can transfer the KGML file to a directed adjacency matrix. 
 # 	In addition, this function also saves the detailed information of nodes within the target pathway.
 # 	Notes: 
 # 	1. This function currently deals with only human biological pathways whose organism ID starts with 
