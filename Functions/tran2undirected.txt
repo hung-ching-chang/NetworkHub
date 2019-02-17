@@ -1,5 +1,5 @@
 # Function: trans2undirected
-#   Transfer a directed adjacency matrix to an  undirected adjacency matrix 
+#   Transfer a directed adjacency matrix to an undirected adjacency matrix 
 
 # Input and output
 # input: (adj_matrix)
