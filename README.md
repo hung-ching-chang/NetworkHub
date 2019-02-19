@@ -1,4 +1,4 @@
-NetworkHub: Prioritize hub gene node regulation with intra-network association
+[NetworkHub](https://placehold.it/15/1589F0/000000?text=+): Prioritize hub gene node regulation with intra-network association
 ============
 **Citation:** *Hung-Ching Chang, Chiao-Pei Chu, Shu-Ju Lin, Chuhsing Kate Hsiao (2019) NetworkHub: Prioritize hub gene node regulation with intra-network association.*
 
@@ -7,7 +7,7 @@ NetworkHub: Prioritize hub gene node regulation with intra-network association
 
 
 # Tutorials
-* There are 7 functions, one R markdown document and two data in the example.
+* There are 7 functions, one R markdown document and two datasets used in the example.
 * Manual pages `Example_of_NetworkHub` are good places to start with. It demonstrates a complete test run with an example. [PDF file](https://github.com/Hung-Ching-Chang/NetworkHub/blob/master/Example_of_NetworkHub.pdf)
 * `NetworkHub` is the major function. [link](https://github.com/Hung-Ching-Chang/NetworkHub/blob/master/Functions/NetworkHub.txt)
 
