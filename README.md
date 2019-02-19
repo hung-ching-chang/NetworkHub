@@ -7,7 +7,7 @@
 
 
 # Tutorials
-* There are 7 functions, one R markdown document and two datasets used in the example.
+* There are 7 functions, one R markdown document and two datasets used in the example `Example_of_NetworkHub`.
 * Manual pages `Example_of_NetworkHub` are good places to start with. It demonstrates a complete test run with an example. [PDF file](https://github.com/Hung-Ching-Chang/NetworkHub/blob/master/Example_of_NetworkHub.pdf)
 * `NetworkHub` is the major function. [link](https://github.com/Hung-Ching-Chang/NetworkHub/blob/master/Functions/NetworkHub.txt)
 
