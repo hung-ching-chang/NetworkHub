@@ -1,4 +1,4 @@
-[NetworkHub](https://placehold.it/15/1589F0/000000?text=+): Prioritize hub gene node regulation with intra-network association
+NetworkHub: Prioritizing hub gene node regulation with intra-network association
 ============
 **Citation:** *Hung-Ching Chang, Chiao-Pei Chu, Shu-Ju Lin, Chuhsing Kate Hsiao (2019) NetworkHub: Prioritize hub gene node regulation with intra-network association.*
 
