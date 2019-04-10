@@ -195,6 +195,7 @@ KGML_to_Matrix <- function(pathway_name, KGML_file_path = "", save_path = ""){
       relationship <- relationship[,-pos1]
       relationship <- relationship[-pos1,]
       # the other output (node_detail) -> record all information about unique nodes.
+      row.names(data_entry) <- data_entry[,1]
       node_detail <- data_entry[-pos1, 2:4]
       # remove the column and row of group node in the matrix
       if(sum(data_entry$type == "group") != 0){
@@ -203,6 +204,7 @@ KGML_to_Matrix <- function(pathway_name, KGML_file_path = "", save_path = ""){
         node_detail <- node_detail[-which(delete_group$type =="group"),]
       }
     }else{
+      row.names(data_entry) <- data_entry[,1]
       node_detail <- data_entry[,2:4]
     }
     # Change the value which is larger than 1 to 1
