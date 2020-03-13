@@ -1,6 +1,6 @@
 NetworkHub: Prioritizing hub gene node regulation with intra-network association
 ============
-**Citation:** *Hung-Ching Chang, Chiao-Pei Chu, Shu-Ju Lin, Chuhsing Kate Hsiao (2019) NetworkHub: Prioritize hub gene node regulation with intra-network association.*
+**Citation:** *Chang, H., Chu, C., Lin, S. et al. Network hub-node prioritization of gene regulation with intra-network association. BMC Bioinformatics 21, 101 (2020). https://doi.org/10.1186/s12859-020-3444-7*
 
 # Overview 
 `NetworkHub` is a tool for identifying the influential hub genes in a gene-set or pathway. The method is described in detail in *Hung-Ching Chang, Chiao-Pei Chu, Shu-Ju Lin, Chuhsing Kate Hsiao (2019) NetworkHub: Prioritize hub gene node regulation with intra-network association.*
